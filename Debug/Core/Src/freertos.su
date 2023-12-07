@@ -1,0 +1,13 @@
+../Core/Src/freertos.c:101:6:MX_FREERTOS_Init	24	static
+../Core/Src/freertos.c:196:6:ResetBuffer	16	static
+../Core/Src/freertos.c:208:9:CalculateAverageVoltage	16	static
+../Core/Src/freertos.c:219:10:CalculateActualVoltage	40	static
+../Core/Src/freertos.c:231:9:CalculateAverageCurrent	16	static
+../Core/Src/freertos.c:242:9:CalculateActualCurrent	40	static
+../Core/Src/freertos.c:254:6:SendBufferOverCAN	40	static
+../Core/Src/freertos.c:322:6:SendVoltageOverCAN	16	static
+../Core/Src/freertos.c:330:6:SendCurrentOverCAN	16	static
+../Core/Src/freertos.c:344:6:StartADCTask	64	static
+../Core/Src/freertos.c:404:6:TurnOffGreenLED	16	static
+../Core/Src/freertos.c:413:6:TurnOffRedLED	16	static
+../Core/Src/freertos.c:422:6:sendCANData	24	static
