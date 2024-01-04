@@ -100,47 +100,48 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-	  ModbusH.uModbusType = MB_SLAVE;
-	  ModbusH.port =  &huart1;
+	ModbusH.uModbusType = MB_SLAVE;
+	ModbusH.port =  &huart1;
 
-	  // Links 0..2 set the low byte of the Modbus address so it ranges from 0x10 to 0x17
-	  ModbusH.u8id = ModbusSlaveID;
-	  if (HAL_GPIO_ReadPin(ADDR0_GPIO_Port, ADDR0_Pin)) {
-		  ModbusH.u8id |= 1;
-		  CANBaseAddress |= 0x04;
-	  }
-	  if (HAL_GPIO_ReadPin(ADDR1_GPIO_Port, ADDR1_Pin)) {
-		  ModbusH.u8id |= 2;
-		  CANBaseAddress |= 0x08;
-	  }
-	  if (HAL_GPIO_ReadPin(ADDR2_GPIO_Port, ADDR2_Pin)) {
-		  ModbusH.u8id |= 4;
-		  CANBaseAddress |= 0x10;
-	  }
-	  ModbusH.u16timeOut = ModbusTimeoutMs;			// Modbus timeout in Milliseconds
+	// Links 0..2 set the low byte of the Modbus address so it ranges from 0x10 to 0x17
+	int ModbusAddressOffset = 0;
+	if (HAL_GPIO_ReadPin(ADDR0_GPIO_Port, ADDR0_Pin)) {
+		ModbusAddressOffset |= 1;
+		CANBaseAddress |= 0x04;
+	}
+	if (HAL_GPIO_ReadPin(ADDR1_GPIO_Port, ADDR1_Pin)) {
+		ModbusAddressOffset |= 2;
+		CANBaseAddress |= 0x08;
+	}
+	if (HAL_GPIO_ReadPin(ADDR2_GPIO_Port, ADDR2_Pin)) {
+		ModbusAddressOffset |= 4;
+		CANBaseAddress |= 0x10;
+	}
+	ModbusH.u8id = ModbusSlaveID + ModbusAddressOffset;
+	ModbusH.u16timeOut = ModbusTimeoutMs;			// Modbus timeout in Milliseconds
 
-	  //  ModbusH.EN_Port = NULL;
-	  // Port for the TXEN line to enable the RS485 driver
-	  ModbusH.EN_Port = RS485_TXEN_GPIO_Port;
-	  ModbusH.EN_Pin = RS485_TXEN_Pin;
+	//  ModbusH.EN_Port = NULL;
+	// Port for the TXEN line to enable the RS485 driver
+	ModbusH.EN_Port = RS485_TXEN_GPIO_Port;
+	ModbusH.EN_Pin = RS485_TXEN_Pin;
 
-	  ModbusH.u16regs = ModbusDATA;
-	  ModbusH.u16regsize= sizeof(ModbusDATA)/sizeof(ModbusDATA[0]);
-	  ModbusH.xTypeHW = USART_HW;
-	  //Initialize Modbus library
-	  ModbusInit(&ModbusH);
+	ModbusH.u16regs = ModbusDATA;
+	ModbusH.u16regsize= sizeof(ModbusDATA)/sizeof(ModbusDATA[0]);
+	ModbusH.xTypeHW = USART_HW;
+	//Initialize Modbus library
+	ModbusInit(&ModbusH);
 
-	  //Start capturing traffic on serial Port
-	  ModbusStart(&ModbusH);
+	//Start capturing traffic on serial Port
+	ModbusStart(&ModbusH);
 
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
+	/* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
+	/* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* Create the timer(s) */
@@ -154,13 +155,13 @@ void MX_FREERTOS_Init(void) {
   sendCANDataTimerHandle = osTimerNew(sendCANData, osTimerPeriodic, NULL, &sendCANDataTimer_attributes);
 
   /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
-  xTimerStart(sendCANDataTimerHandle, 10);
+	/* start timers, add new ones, ... */
+	xTimerStart(sendCANDataTimerHandle, 10);
 
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
+	/* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -168,17 +169,17 @@ void MX_FREERTOS_Init(void) {
   ADCTaskHandle = osThreadNew(StartADCTask, NULL, &ADCTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
+	/* add threads, ... */
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
-  /* add events, ... */
+	/* add events, ... */
   /* USER CODE END RTOS_EVENTS */
 
 }
 
 /* USER CODE BEGIN Header_StartADCTask */
-#define BufferSize 25
+#define BufferSize 100
 
 typedef struct {
 	int32_t data[BufferSize];
@@ -261,61 +262,64 @@ void SendBufferOverCAN(int16_t messageID) {
 	msg.RTR = CAN_RTR_DATA;
 	msg.TransmitGlobalTime = DISABLE;
 
-	HAL_StatusTypeDef st = HAL_CAN_AddTxMessage(&hcan, &msg, CANBuffer, &mb);
-	if (st != HAL_OK) {
-		// Turn on Red LED to indicate there is a problem
-		HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
-		xTimerStart(RedLedOffTimerHandle, 75);
+	if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan) > 0) {
 
-//		char* err;
-//		switch(hcan.ErrorCode) {
-//		case HAL_CAN_ERROR_NONE : err = NULL;
-//		break;
-//		case HAL_CAN_ERROR_EWG : err =   "Protocol Error Warning";
-//		break;
-//		case HAL_CAN_ERROR_EPV : err =   "Error Passive";
-//		break;
-//		case HAL_CAN_ERROR_BOF : err =   "Bus-off error";
-//		break;
-//		case HAL_CAN_ERROR_STF : err =   "Stuff error";
-//		break;
-//		case HAL_CAN_ERROR_FOR : err =   "Form error";
-//		break;
-//		case HAL_CAN_ERROR_ACK : err =   "Acknowledgment error";
-//		break;
-//		case HAL_CAN_ERROR_BR : err =   "Bit recessive error";
-//		break;
-//		case HAL_CAN_ERROR_BD : err =   "Bit dominant error";
-//		break;
-//		case HAL_CAN_ERROR_CRC : err =   "CRC error";
-//		break;
-//		case HAL_CAN_ERROR_RX_FOV0 : err =   "Rx FIFO0 overrun error";
-//		break;
-//		case HAL_CAN_ERROR_RX_FOV1  : err =   "Rx FIFO1 overrun error";
-//		break;
-//		case HAL_CAN_ERROR_TX_ALST0 : err =   "TxMailbox 0 transmit failure due to arbitration lost";
-//		break;
-//		case HAL_CAN_ERROR_TX_TERR0 : err =   "TxMailbox 0 transmit failure due to transmit error";
-//		break;
-//		case HAL_CAN_ERROR_TX_ALST1 : err =   "TxMailbox 1 transmit failure due to arbitration lost";
-//		break;
-//		case HAL_CAN_ERROR_TX_TERR1 : err =   "TxMailbox 1 transmit failure due to transmit error";
-//		break;
-//		case HAL_CAN_ERROR_TX_ALST2 : err =   "TxMailbox 2 transmit failure due to arbitration lost";
-//		break;
-//		case HAL_CAN_ERROR_TX_TERR2 : err =   "TxMailbox 2 transmit failure due to transmit error ";
-//		break;
-//		case HAL_CAN_ERROR_TIMEOUT : err =   "Timeout error";
-//		break;
-//		case HAL_CAN_ERROR_NOT_INITIALIZED : err =   "Peripheral not initialized";
-//		break;
-//		case HAL_CAN_ERROR_NOT_READY : err =   "Peripheral not ready";
-//		break;
-//		case HAL_CAN_ERROR_NOT_STARTED : err = "Peripheral not started";
-//		break;
-//		case HAL_CAN_ERROR_PARAM : err =   "Parameter error ";
-//		break;
-//		}
+		HAL_StatusTypeDef st = HAL_CAN_AddTxMessage(&hcan, &msg, CANBuffer, &mb);
+		if (st != HAL_OK) {
+			// Turn on Red LED to indicate there is a problem
+			HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
+			xTimerStart(RedLedOffTimerHandle, 75);
+
+//			char* err;
+//			switch(hcan.ErrorCode) {
+//			case HAL_CAN_ERROR_NONE : err = NULL;
+//			break;
+//			case HAL_CAN_ERROR_EWG : err =   "Protocol Error Warning";
+//			break;
+//			case HAL_CAN_ERROR_EPV : err =   "Error Passive";
+//			break;
+//			case HAL_CAN_ERROR_BOF : err =   "Bus-off error";
+//			break;
+//			case HAL_CAN_ERROR_STF : err =   "Stuff error";
+//			break;
+//			case HAL_CAN_ERROR_FOR : err =   "Form error";
+//			break;
+//			case HAL_CAN_ERROR_ACK : err =   "Acknowledgment error";
+//			break;
+//			case HAL_CAN_ERROR_BR : err =   "Bit recessive error";
+//			break;
+//			case HAL_CAN_ERROR_BD : err =   "Bit dominant error";
+//			break;
+//			case HAL_CAN_ERROR_CRC : err =   "CRC error";
+//			break;
+//			case HAL_CAN_ERROR_RX_FOV0 : err =   "Rx FIFO0 overrun error";
+//			break;
+//			case HAL_CAN_ERROR_RX_FOV1  : err =   "Rx FIFO1 overrun error";
+//			break;
+//			case HAL_CAN_ERROR_TX_ALST0 : err =   "TxMailbox 0 transmit failure due to arbitration lost";
+//			break;
+//			case HAL_CAN_ERROR_TX_TERR0 : err =   "TxMailbox 0 transmit failure due to transmit error";
+//			break;
+//			case HAL_CAN_ERROR_TX_ALST1 : err =   "TxMailbox 1 transmit failure due to arbitration lost";
+//			break;
+//			case HAL_CAN_ERROR_TX_TERR1 : err =   "TxMailbox 1 transmit failure due to transmit error";
+//			break;
+//			case HAL_CAN_ERROR_TX_ALST2 : err =   "TxMailbox 2 transmit failure due to arbitration lost";
+//			break;
+//			case HAL_CAN_ERROR_TX_TERR2 : err =   "TxMailbox 2 transmit failure due to transmit error ";
+//			break;
+//			case HAL_CAN_ERROR_TIMEOUT : err =   "Timeout error";
+//			break;
+//			case HAL_CAN_ERROR_NOT_INITIALIZED : err =   "Peripheral not initialized";
+//			break;
+//			case HAL_CAN_ERROR_NOT_READY : err =   "Peripheral not ready";
+//			break;
+//			case HAL_CAN_ERROR_NOT_STARTED : err = "Peripheral not started";
+//			break;
+//			case HAL_CAN_ERROR_PARAM : err =   "Parameter error ";
+//			break;
+//			}
+		}
 	}
 }
 
@@ -351,7 +355,7 @@ void StartADCTask(void *argument)
 	ResetBuffer();
 
   MCP3462_ADCInit();
-  StartCANReception(hcan);
+ // StartCANReception(hcan);
 
   /* Infinite loop */
   for(;;)

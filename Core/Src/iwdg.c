@@ -41,10 +41,12 @@ void MX_IWDG_Init(void)
   hiwdg.Init.Prescaler = IWDG_PRESCALER_128;
   hiwdg.Init.Window = 4095;
   hiwdg.Init.Reload = 4095;
+#ifndef  DEBUG
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
   {
     Error_Handler();
   }
+#endif
   /* USER CODE BEGIN IWDG_Init 2 */
 
   /* USER CODE END IWDG_Init 2 */

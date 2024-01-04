@@ -99,7 +99,7 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN Private defines */
 extern modbusHandler_t ModbusH;
-#define ModbusTimeoutMs	1000
+#define ModbusTimeoutMs	100
 #define ModbusSlaveID	10
 #define NumCoils		8
 #define NumDiscreteInputs 4

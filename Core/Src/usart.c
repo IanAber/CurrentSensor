@@ -33,7 +33,7 @@ void MX_USART1_UART_Init(void)
 
   /* USER CODE BEGIN USART1_Init 0 */
 	uint32_t BAUDRATE = 19200;
-	if (HAL_GPIO_ReadPin(CAN250_GPIO_Port, ADDR1_Pin)) {
+	if (!HAL_GPIO_ReadPin(MODBUS9600_GPIO_Port, MODBUS9600_Pin)) {
 		BAUDRATE = 9600;
 	}
 

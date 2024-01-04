@@ -139,6 +139,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 void StartCANReception (CAN_HandleTypeDef hcan) {
 
 		/*##- Configure the CAN Filter ###########################################*/
+	/* Set the filter to allow only the calibration frames through for this devices address */
 		CAN_FilterTypeDef  sFilterConfig;
 
 		sFilterConfig.FilterBank = 0;

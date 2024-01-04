@@ -1,4 +1,4 @@
-Core/Src/FlASH_PAGE_F1.o: ../Core/Src/FlASH_PAGE_F1.c \
+Core/Src/FLASH_PAGE_F1.o: ../Core/Src/FLASH_PAGE_F1.c \
  ../Core/Inc/FLASH_PAGE_F1.h \
  ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal.h \
  ../Core/Inc/stm32f0xx_hal_conf.h \
