@@ -1,2 +1,2 @@
 ../Middlewares/Third_Party/MCP3462/Src/MCP3462.c:8:6:MCP3462_ADCInit	1
-../Middlewares/Third_Party/MCP3462/Src/MCP3462.c:45:9:MCP3462_ADCRead	2
+../Middlewares/Third_Party/MCP3462/Src/MCP3462.c:47:9:MCP3462_ADCRead	2

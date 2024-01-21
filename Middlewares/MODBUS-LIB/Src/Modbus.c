@@ -2095,6 +2095,9 @@ void LoadCalibrationData() {
 	}
 }
 
+const uint8_t *GetCalibrationDataPtr() {
+	return (uint8_t *)&calibrationData;
+}
 /**
  * GetVoltageCalibration calculates the slope and offset for the voltage measurements based on the calibration data from the flash memory
  */

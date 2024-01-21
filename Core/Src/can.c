@@ -22,6 +22,8 @@
 
 /* USER CODE BEGIN 0 */
 
+extern osTimerId_t RedLedOffTimerHandle;
+
 /* USER CODE END 0 */
 
 CAN_HandleTypeDef hcan;
@@ -36,7 +38,7 @@ void MX_CAN_Init(void)
 
   /* USER CODE BEGIN CAN_Init 1 */
 	uint32_t PRESCALER = 8;		// 500 kbps
-	if (HAL_GPIO_ReadPin(CAN250_GPIO_Port, ADDR1_Pin)) {
+	if (!HAL_GPIO_ReadPin(CAN250_GPIO_Port, ADDR1_Pin)) {
 		PRESCALER = 16;		// 250kbps
 	}
   /* USER CODE END CAN_Init 1 */
@@ -130,7 +132,8 @@ extern osMessageQueueId_t RelayOuputQueueHandle;
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 	if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK) {
 		/* Reception Error */
-		Error_Handler();
+		HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
+		xTimerStart(RedLedOffTimerHandle, 200);
 		return;
 	}
 	// TODO - Handle incoming CAN frames

@@ -328,6 +328,10 @@ void SetHighCurrentCalibration(int32_t CurrentReading, uint16_t CurrentActualLow
  */
 void StoreCalibrationData();
 /**
+ * GetCalibrationDataPtr returns the address of the calibration data structure.
+ */
+const uint8_t *GetCalibrationDataPtr();
+/**
  * GetVoltageCalibration calculates the slope and offset for the voltage measurements based on the calibration data from the flash memory
  */
 void GetVoltageCalibration(double *m, double *c);

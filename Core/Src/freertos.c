@@ -156,7 +156,8 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_TIMERS */
 	/* start timers, add new ones, ... */
-	xTimerStart(sendCANDataTimerHandle, 10);
+
+	osTimerStart(sendCANDataTimerHandle, 5000);	// Send the calibration data every 5 seconds
 
   /* USER CODE END RTOS_TIMERS */
 
@@ -174,6 +175,8 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_EVENTS */
 	/* add events, ... */
+	StartCANReception(hcan);
+
   /* USER CODE END RTOS_EVENTS */
 
 }
@@ -217,13 +220,13 @@ int32_t CalculateAverageVoltage() {
 /**
  * Applies the calibration values to calculate the actual voltage
  */
-int16_t  CalculateActualVoltage(double rawVoltage) {
+uint16_t  CalculateActualVoltage(double rawVoltage) {
 	double m;
 	double c;
 	double v;
 	GetVoltageCalibration(&m, &c);
 	v = (m * rawVoltage) + c;
-	return (int16_t)v;
+	return (uint16_t)v;
 }
 
 /**
@@ -252,7 +255,7 @@ int32_t CalculateActualCurrent(double rawCurrent) {
 uint8_t CANBuffer[8];	// Define an 8 byte buffer for information sent on the CAN bus
 CAN_TxHeaderTypeDef msg;
 
-void SendBufferOverCAN(int16_t messageID) {
+void SendBufferOverCAN(int16_t messageID, const uint8_t *buffer) {
 	uint32_t mb;	// TxMailbox returned by the HAL driver
 
 	msg.DLC = 8;	// 8 bytes of data
@@ -264,7 +267,7 @@ void SendBufferOverCAN(int16_t messageID) {
 
 	if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan) > 0) {
 
-		HAL_StatusTypeDef st = HAL_CAN_AddTxMessage(&hcan, &msg, CANBuffer, &mb);
+		HAL_StatusTypeDef st = HAL_CAN_AddTxMessage(&hcan, &msg, buffer, &mb);
 		if (st != HAL_OK) {
 			// Turn on Red LED to indicate there is a problem
 			HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
@@ -320,24 +323,35 @@ void SendBufferOverCAN(int16_t messageID) {
 //			break;
 //			}
 		}
+	} else {
+		HAL_GPIO_WritePin(RED_LED_GPIO_Port, RED_LED_Pin, GPIO_PIN_SET);
+		xTimerStart(RedLedOffTimerHandle, 75);
 	}
 }
 
-void SendVoltageOverCAN(int32_t raw, int16_t calculated) {
-	memset(CANBuffer, 0, sizeof(CANBuffer));
-	memcpy(CANBuffer, &calculated, 2);			// Calculated value goes in the first two bytes
-	memcpy(CANBuffer + 4, &raw, 4);				// Raw value goes in byte 3 to 6
+void SendVoltageOverCAN(uint32_t raw, uint16_t calculated) {
+	uint8_t Buffer[8];
+	memset(Buffer, 0, sizeof(Buffer));
+	memcpy(Buffer, &calculated, 2);			// Calculated value goes in the first two bytes
+	memcpy(Buffer + 4, &raw, 4);				// Raw value goes in byte 3 to 6
 
-	SendBufferOverCAN(0);
+	SendBufferOverCAN(0, Buffer);
+	if (HAL_GPIO_ReadPin(Debug_GPIO_Port, Debug_Pin)) {
+		HAL_GPIO_WritePin(Debug_GPIO_Port, Debug_Pin, GPIO_PIN_RESET);
+	} else {
+		HAL_GPIO_WritePin(Debug_GPIO_Port, Debug_Pin, GPIO_PIN_SET);
+	}
 }
 
-void SendCurrentOverCAN(int32_t raw, int32_t calculated) {
-	memset(CANBuffer, 0, sizeof(CANBuffer));
-	memcpy(CANBuffer, &calculated, 4);			// Calculated value goes in the first four bytes
-	memcpy(CANBuffer + 4, &raw, 4);				// Raw value goes in byte 3 to 6
+void SendCurrentOverCAN(uint32_t raw, int32_t calculated) {
+	uint8_t Buffer[8];
+	memset(Buffer, 0, sizeof(Buffer));
+	memcpy(Buffer, &calculated, 4);			// Calculated value goes in the first four bytes
+	memcpy(Buffer + 4, &raw, 4);				// Raw value goes in byte 3 to 6
 
-	SendBufferOverCAN(1);
+	SendBufferOverCAN(1, Buffer);
 }
+
 
 /**
 * @brief Function implementing the ADCTask thread.
@@ -374,8 +388,11 @@ void StartADCTask(void *argument)
 	  // If we have new data
 	  if ((status & 0b01000000) == 0) {
 		  if (channel == 0) {
-			  lastVoltage = value32;
-			  newVoltage = true;
+//			  lastVoltage = value32;
+
+			  SendVoltageOverCAN(value32, CalculateActualVoltage((double)value32));
+
+//			  newVoltage = true;
 			  adcBuffer.voltage.data[adcBuffer.voltage.dataPtr++] = value32;
 			  if (adcBuffer.voltage.dataPtr >= BufferSize) {
 				  adcBuffer.voltage.dataPtr = 0;
@@ -387,6 +404,9 @@ void StartADCTask(void *argument)
 			  xSemaphoreGive(ModbusH.ModBusSphrHandle);
 		  } else {
 			  lastCurrent = value32;
+
+			  SendCurrentOverCAN(value32, CalculateActualCurrent((double)value32));
+
 			  newCurrent = true;
 			  adcBuffer.current.data[adcBuffer.current.dataPtr++] = value32;
 			  if (adcBuffer.current.dataPtr >= BufferSize) {
@@ -426,20 +446,18 @@ void TurnOffRedLED(void *argument)
 void sendCANData(void *argument)
 {
   /* USER CODE BEGIN sendCANData */
-	int32_t voltage;
-	int32_t current;
+	// Send the voltage calibration as four 16 bit numbers
+	SendBufferOverCAN(2, GetCalibrationDataPtr());
 
-	  voltage = lastVoltage;
-	  current = lastCurrent;
-	  if (newVoltage ) {
-		  SendVoltageOverCAN(voltage, CalculateActualVoltage(voltage));
-		  newVoltage = false;
-	  }
-	  if (newCurrent) {
-		  SendCurrentOverCAN(current, CalculateActualCurrent(current));
-		  newCurrent = false;
-	  }
+	vTaskDelay( 100 );
 
+	// Send the low current calibration points as two 32 bit numbers
+	SendBufferOverCAN(3, GetCalibrationDataPtr() + 8);
+
+	vTaskDelay( 100 );
+
+	// Send the high current calibration points as two 32 bit numbers
+	SendBufferOverCAN(4, GetCalibrationDataPtr() + 16);
   /* USER CODE END sendCANData */
 }
 

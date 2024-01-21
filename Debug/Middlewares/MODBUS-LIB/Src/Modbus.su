@@ -35,6 +35,7 @@
 ../Middlewares/MODBUS-LIB/Src/Modbus.c:2069:6:SetHighCurrentCalibration	16	static
 ../Middlewares/MODBUS-LIB/Src/Modbus.c:2077:6:StoreCalibrationData	8	static
 ../Middlewares/MODBUS-LIB/Src/Modbus.c:2084:6:LoadCalibrationData	16	static
-../Middlewares/MODBUS-LIB/Src/Modbus.c:2101:6:GetVoltageCalibration	32	static
-../Middlewares/MODBUS-LIB/Src/Modbus.c:2111:6:GetCurrentCalibration	32	static
-../Middlewares/MODBUS-LIB/Src/Modbus.c:2120:10:CalculateChecksum	40	static
+../Middlewares/MODBUS-LIB/Src/Modbus.c:2098:16:GetCalibrationDataPtr	8	static
+../Middlewares/MODBUS-LIB/Src/Modbus.c:2104:6:GetVoltageCalibration	32	static
+../Middlewares/MODBUS-LIB/Src/Modbus.c:2114:6:GetCurrentCalibration	32	static
+../Middlewares/MODBUS-LIB/Src/Modbus.c:2123:10:CalculateChecksum	40	static

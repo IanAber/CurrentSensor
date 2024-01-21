@@ -166,14 +166,14 @@ enum MCP3492_Registers {
 
 /* Scan Modes Settings Register */
 /* Delay Time between each conversion */
-#define MCP3462_DMCLK512	0xE0000
-#define MCP3462_DMCLK256	0xC0000
-#define MCP3462_DMCLK128	0xA0000
-#define MCP3462_DMCLK64		0x80000
-#define MCP3462_DMCLK32		0x60000
-#define MCP3462_DMCLK16		0x40000
-#define MCP3462_DMCLK8		0x20000
-#define MCP3462_DMCLK0		0x00000
+#define MCP3462_DMCLK512	0xE0
+#define MCP3462_DMCLK256	0xC0
+#define MCP3462_DMCLK128	0xA0
+#define MCP3462_DMCLK64		0x80
+#define MCP3462_DMCLK32		0x60
+#define MCP3462_DMCLK16		0x40
+#define MCP3462_DMCLK8		0x20
+#define MCP3462_DMCLK0		0x00
 // 89
 /* SCAn channel selection */
 #define MCP3462_ADC_OFFSET	0b0000000000001111

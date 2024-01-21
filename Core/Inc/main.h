@@ -90,8 +90,8 @@ void Error_Handler(void);
 #define ADDR1_GPIO_Port GPIOB
 #define ADDR2_Pin GPIO_PIN_4
 #define ADDR2_GPIO_Port GPIOB
-#define LK3_Pin GPIO_PIN_5
-#define LK3_GPIO_Port GPIOB
+#define Debug_Pin GPIO_PIN_5
+#define Debug_GPIO_Port GPIOB
 #define CAN250_Pin GPIO_PIN_6
 #define CAN250_GPIO_Port GPIOB
 #define MODBUS9600_Pin GPIO_PIN_7
