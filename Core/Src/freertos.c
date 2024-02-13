@@ -107,15 +107,15 @@ void MX_FREERTOS_Init(void) {
 	int ModbusAddressOffset = 0;
 	if (HAL_GPIO_ReadPin(ADDR0_GPIO_Port, ADDR0_Pin)) {
 		ModbusAddressOffset |= 1;
-		CANBaseAddress |= 0x04;
+		CANBaseAddress |= 0x08;
 	}
 	if (HAL_GPIO_ReadPin(ADDR1_GPIO_Port, ADDR1_Pin)) {
 		ModbusAddressOffset |= 2;
-		CANBaseAddress |= 0x08;
+		CANBaseAddress |= 0x10;
 	}
 	if (HAL_GPIO_ReadPin(ADDR2_GPIO_Port, ADDR2_Pin)) {
 		ModbusAddressOffset |= 4;
-		CANBaseAddress |= 0x10;
+		CANBaseAddress |= 0x20;
 	}
 	ModbusH.u8id = ModbusSlaveID + ModbusAddressOffset;
 	ModbusH.u16timeOut = ModbusTimeoutMs;			// Modbus timeout in Milliseconds
